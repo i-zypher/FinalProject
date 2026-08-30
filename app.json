@@ -1,0 +1,17 @@
+{
+  "expo": {
+    "name": "FinalProjectApp",
+    "slug": "final-project-app",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.ceymerstudios.finalprojectapp"
+    },
+    "android": {
+      "package": "com.ceymerstudios.finalprojectapp"
+    }
+  }
+}
