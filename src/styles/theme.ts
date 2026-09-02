@@ -78,4 +78,6 @@ export const globalStyles = StyleSheet.create({
     textAlign: 'center',
     marginTop: spacing.md,
   },
+
+  
 });
