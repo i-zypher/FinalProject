@@ -125,7 +125,6 @@ export const globalStyles = StyleSheet.create({
     fontSize: fontSizes.xs,
     color: colors.error,
     marginTop: spacing.xs,
-    marginLeft: spacing.sm,
   },
   logo: {
     width: 96,

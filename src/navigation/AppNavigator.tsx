@@ -17,6 +17,7 @@ export default function AppNavigator() {
         headerTintColor: colors.text,
         headerShadowVisible: false,
         headerTitleStyle: { fontWeight: '600' },
+        cardStyle: { flex: 1 },
       }}
     >
       <Stack.Screen name="Login" component={LoginScreen} options={{ title: 'Log In' }} />

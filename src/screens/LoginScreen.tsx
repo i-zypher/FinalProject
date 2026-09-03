@@ -6,6 +6,7 @@ import { globalStyles } from '../styles/theme';
 import Logo from '../components/Logo';
 import FormField from '../components/FormField';
 import { useUser } from '../context/UserContext';
+import { findAccountName } from '../data/accounts';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Login'>;
 
@@ -38,9 +39,13 @@ export default function LoginScreen({ navigation }: Props) {
 
   const handleLogin = () => {
     if (!validate()) return;
-    // Placeholder auth — derives a display name from the email typed in.
-    const namePart = email.trim().split('@')[0];
-    setName(namePart ? namePart : 'there');
+
+    // Prefer the name saved at Signup for this email, if there is one.
+    // Falls back to guessing from the email prefix for anyone logging
+    // in without having signed up in this session (no real backend).
+    const savedName = findAccountName(email);
+    const fallbackName = email.trim().split('@')[0];
+    setName(savedName ?? (fallbackName || 'there'));
     navigation.navigate('Main');
   };
 

@@ -50,6 +50,7 @@ export default function DrawerNavigator() {
     <Drawer.Navigator
       initialRouteName="HomeStack"
       drawerContent={(props) => <CustomDrawerContent {...props} />}
+      sceneContainerStyle={{ flex: 1 }}
       screenOptions={{
         headerShown: false,
         drawerActiveTintColor: colors.primary,
