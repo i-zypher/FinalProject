@@ -12,6 +12,7 @@ import {
 } from '@expo-google-fonts/manrope';
 import AppNavigator from './src/navigation/AppNavigator';
 import { UserProvider } from './src/context/UserContext';
+import { FavoritesProvider } from './src/context/FavoritesContext';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -34,12 +35,14 @@ export default function App() {
   }
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }} onLayout={onLayoutRootView}>
+        <GestureHandlerRootView style={{ flex: 1 }} onLayout={onLayoutRootView}>
       <UserProvider>
-        <NavigationContainer>
-          <StatusBar style="dark" />
-          <AppNavigator />
-        </NavigationContainer>
+        <FavoritesProvider>
+          <NavigationContainer>
+            <StatusBar style="dark" />
+            <AppNavigator />
+          </NavigationContainer>
+        </FavoritesProvider>
       </UserProvider>
     </GestureHandlerRootView>
   );

@@ -1,113 +1,218 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
+import {
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  Image,
+  ImageBackground,
+  StyleSheet,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { DrawerActions } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { HomeStackParamList } from '../navigation/types';
-import { colors, spacing, fontSizes, globalStyles } from '../styles/theme';
-import TopBar from '../components/TopBar';
-import MeditationCard from '../components/MeditationCard';
-import { meditations as initialMeditations } from '../data/meditations';
+import { colors, spacing, fontSizes, fonts } from '../styles/theme';
+import CategoryPill from '../components/CategoryPill';
+import QuickStartCard from '../components/QuickStartCard';
+import Logo from '../components/Logo'; 
+import { dailyFeatured, popularMeditations, categories } from '../data/meditations';
 import { useUser } from '../context/UserContext';
 
 type Props = NativeStackScreenProps<HomeStackParamList, 'Home'>;
 
+function getGreeting(): string {
+  const hour = new Date().getHours();
+  if (hour < 12) return 'Good morning';
+  if (hour < 18) return 'Good afternoon';
+  return 'Good evening';
+}
+
 export default function HomeScreen({ navigation }: Props) {
   const { name } = useUser();
-  const [meditations, setMeditations] = useState(initialMeditations);
-
-  const popular = meditations.filter((m) => m.section === 'popular');
-  const daily = meditations.filter((m) => m.section === 'daily');
-
-  const toggleDone = (id: string) => {
-    setMeditations((prev) => prev.map((m) => (m.id === id ? { ...m, done: !m.done } : m)));
-  };
+  // Visual-only selection, matching Figma's "Browse by Need" pills —
+  // doesn't currently filter the Popular Quick Starts list below.
+  const [selectedCategory, setSelectedCategory] = useState(categories[0]);
 
   return (
     <View style={styles.screen}>
-      <TopBar
-        title="Find your perfect meditation"
-        onMenuPress={() => navigation.getParent()?.dispatch(DrawerActions.toggleDrawer())}
-      />
-
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={styles.welcome}>
-          <Text style={globalStyles.headerText}>Hello, {name || 'there'}!</Text>
-          <Text style={globalStyles.subHeaderText}>
-            Discover a session tailored to how you're feeling today.
-          </Text>
+        <LinearGradient
+          colors={[colors.logoGradientStart, colors.logoGradientEnd]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.hero}
+        >
+          <View style={styles.heroRow}>
+            <TouchableOpacity
+              onPress={() => navigation.getParent()?.dispatch(DrawerActions.toggleDrawer())}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <Ionicons name="menu" size={26} color="#FFFFFF" />
+            </TouchableOpacity>
+
+            <Logo size={32}/>
+
+            <View style={styles.greetingBlock}>
+              <Text style={styles.greetingTitle}>
+                {getGreeting()}
+                {name ? `, ${name}` : ''}
+              </Text>
+              <Text style={styles.greetingSubtitle}>Ready to exhale the morning stress?</Text>
+            </View>
+
+            <Image source={{ uri: 'https://i.pravatar.cc/88' }} style={styles.avatar} />
+          </View>
+        </LinearGradient>
+
+        <View style={styles.body}>
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Today's Daily Breath</Text>
+            <TouchableOpacity
+              activeOpacity={0.9}
+              onPress={() => navigation.navigate('MeditationDetail', { meditation: dailyFeatured })}
+            >
+              <ImageBackground
+                source={{ uri: dailyFeatured.imageUri }}
+                style={styles.featuredCard}
+                imageStyle={{ borderRadius: 24 }}
+              >
+                <View style={styles.featuredOverlay} />
+                <View style={styles.featuredBadgeRow}>
+                  <View style={styles.badgeLight}>
+                    <Text style={styles.badgeLightText}>{dailyFeatured.category}</Text>
+                  </View>
+                  <View style={styles.badgeGreen}>
+                    <Text style={styles.badgeGreenText}>{dailyFeatured.duration}</Text>
+                  </View>
+                </View>
+                <View>
+                  <Text style={styles.featuredTitle}>{dailyFeatured.title}</Text>
+                  <Text style={styles.featuredDesc}>{dailyFeatured.description}</Text>
+                </View>
+              </ImageBackground>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Browse by Need</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              {categories.map((cat) => (
+                <CategoryPill
+                  key={cat}
+                  label={cat}
+                  active={cat === selectedCategory}
+                  onPress={() => setSelectedCategory(cat)}
+                />
+              ))}
+            </ScrollView>
+          </View>
+
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Popular Quick Starts</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              {popularMeditations.map((meditation) => (
+                <QuickStartCard
+                  key={meditation.id}
+                  meditation={meditation}
+                  onPress={() => navigation.navigate('MeditationDetail', { meditation })}
+                />
+              ))}
+            </ScrollView>
+          </View>
         </View>
-
-        <Text style={styles.sectionHeader}>Popular Meditations</Text>
-        {popular.length === 0 ? (
-          <Text style={styles.emptyText}>Nothing here yet.</Text>
-        ) : (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.row}>
-            {popular.map((meditation) => (
-              <MeditationCard
-                key={meditation.id}
-                meditation={meditation}
-                onPress={() => navigation.navigate('MeditationDetail', { meditation })}
-                onToggleDone={() => toggleDone(meditation.id)}
-                onEdit={() => {}}
-              />
-            ))}
-          </ScrollView>
-        )}
-
-        <Text style={styles.sectionHeader}>Daily Meditation</Text>
-        {daily.length === 0 ? (
-          <Text style={styles.emptyText}>Nothing scheduled yet.</Text>
-        ) : (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.row}>
-            {daily.map((meditation) => (
-              <MeditationCard
-                key={meditation.id}
-                meditation={meditation}
-                onPress={() => navigation.navigate('MeditationDetail', { meditation })}
-                onToggleDone={() => toggleDone(meditation.id)}
-                onEdit={() => {}}
-              />
-            ))}
-          </ScrollView>
-        )}
       </ScrollView>
-
-      <TouchableOpacity style={styles.fab} onPress={() => {}}>
-        <Ionicons name="add" size={28} color="#fff" />
-      </TouchableOpacity>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.background },
-  scrollContent: { paddingBottom: 100 },
-  welcome: { paddingHorizontal: spacing.lg, marginTop: spacing.sm, marginBottom: spacing.lg },
-  sectionHeader: {
-    color: colors.text,
-    fontSize: fontSizes.lg,
-    fontWeight: '700',
-    marginLeft: spacing.lg,
-    marginBottom: spacing.sm,
-    marginTop: spacing.md,
+  scrollContent: { paddingBottom: spacing.xl },
+  hero: {
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.xl,
   },
-  row: { paddingLeft: spacing.lg, marginBottom: spacing.sm },
-  emptyText: { color: colors.textMuted, fontSize: fontSizes.sm, marginLeft: spacing.lg, marginBottom: spacing.md },
-  fab: {
-    position: 'absolute',
-    right: spacing.lg,
-    bottom: spacing.xl,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: colors.primary,
+  heroRow: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: 6,
+    gap: spacing.md,
+  },
+  greetingBlock: { flex: 1, gap: 4 },
+  greetingTitle: {
+    fontFamily: fonts.headingBold,
+    fontSize: 24,
+    color: '#FFFFFF',
+  },
+  greetingSubtitle: {
+    fontFamily: fonts.bodyRegular,
+    fontSize: fontSizes.sm,
+    color: '#E2E8F0',
+  },
+  avatar: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+  },
+  body: {
+    padding: spacing.lg,
+    gap: spacing.xl - 4,
+  },
+  section: { gap: spacing.sm + 4 },
+  sectionTitle: {
+    fontFamily: fonts.headingBold,
+    fontSize: 18,
+    color: colors.text,
+  },
+  featuredCard: {
+    height: 220,
+    borderRadius: 24,
+    padding: spacing.lg,
+    justifyContent: 'space-between',
+    overflow: 'hidden',
+  },
+  featuredOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    borderRadius: 24,
+  },
+  featuredBadgeRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  badgeLight: {
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    borderRadius: 999,
+    paddingHorizontal: spacing.sm + 4,
+    paddingVertical: 4,
+  },
+  badgeLightText: {
+    fontFamily: fonts.bodyBold,
+    fontSize: 12,
+    color: '#FFFFFF',
+  },
+  badgeGreen: {
+    backgroundColor: '#D1FAE5',
+    borderRadius: 999,
+    paddingHorizontal: spacing.sm + 4,
+    paddingVertical: 4,
+  },
+  badgeGreenText: {
+    fontFamily: fonts.bodyBold,
+    fontSize: 12,
+    color: '#065F46',
+  },
+  featuredTitle: {
+    fontFamily: fonts.headingBold,
+    fontSize: 22,
+    color: '#FFFFFF',
+    marginBottom: spacing.xs,
+  },
+  featuredDesc: {
+    fontFamily: fonts.bodyRegular,
+    fontSize: fontSizes.sm,
+    color: '#F1F5F9',
   },
 });
