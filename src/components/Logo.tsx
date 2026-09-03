@@ -1,33 +1,28 @@
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
+import { StyleSheet } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../styles/theme';
 
-// Placeholder logo built from plain Views — no image file needed.
-// Swap for <Image source={require('../../assets/images/logo.png')} />
-// once you've uploaded your real Figma-exported logo.
 export default function Logo() {
   return (
-    <View style={styles.outer}>
-      <View style={styles.inner} />
-    </View>
+    <LinearGradient
+      colors={[colors.logoGradientStart, colors.logoGradientEnd]}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={styles.circle}
+    >
+      <Ionicons name="flower" size={32} color="#FFFFFF" />
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
-  outer: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
-    backgroundColor: colors.primary,
-    alignSelf: 'center',
-    marginBottom: 24,
+  circle: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  inner: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: colors.secondary,
   },
 });

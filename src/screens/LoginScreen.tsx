@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/types';
 import { globalStyles } from '../styles/theme';
 import Logo from '../components/Logo';
+import FormField from '../components/FormField';
+import { useUser } from '../context/UserContext';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Login'>;
 
@@ -15,73 +17,71 @@ type FormErrors = {
 };
 
 export default function LoginScreen({ navigation }: Props) {
+  const { setName } = useUser();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errors, setErrors] = useState<FormErrors>({});
 
   const validate = (): boolean => {
     const next: FormErrors = {};
-
     if (!email.trim()) {
       next.email = 'Email is required.';
     } else if (!EMAIL_REGEX.test(email.trim())) {
       next.email = 'Enter a valid email address.';
     }
-
     if (!password) {
       next.password = 'Password is required.';
     }
-
     setErrors(next);
     return Object.keys(next).length === 0;
   };
 
   const handleLogin = () => {
     if (!validate()) return;
-
-    // No backend yet, so this isn't real authentication — it just derives
-    // a display name from whatever was typed in the email field so the
-    // Home screen greeting isn't hardcoded. Replace with a real auth call
-    // (and the name it returns) once there's a backend to hit.
+    // Placeholder auth — derives a display name from the email typed in.
     const namePart = email.trim().split('@')[0];
-    const displayName = namePart ? namePart : 'there';
-    navigation.navigate('Home', { name: displayName });
+    setName(namePart ? namePart : 'there');
+    navigation.navigate('Main');
   };
 
   return (
-    <View style={globalStyles.container}>
-      <Logo />
-      <Text style={globalStyles.headerText}>Welcome Back</Text>
-      <Text style={globalStyles.subHeaderText}>Log in to continue</Text>
+    <ScrollView style={globalStyles.screen} contentContainerStyle={globalStyles.scrollContent}>
+      <View style={globalStyles.brandHeader}>
+        <Logo />
+        <Text style={globalStyles.headerText}>Welcome Back</Text>
+        <Text style={globalStyles.subHeaderText}>Take a breath and sign in to continue</Text>
+      </View>
 
-      <TextInput
-        style={globalStyles.input}
-        placeholder="Email"
-        placeholderTextColor="#7A7A96"
-        autoCapitalize="none"
-        keyboardType="email-address"
-        value={email}
-        onChangeText={setEmail}
-      />
-      {errors.email && <Text style={globalStyles.errorText}>{errors.email}</Text>}
+      <View style={{ gap: 20 }}>
+        <FormField
+          label="Email address"
+          autoCapitalize="none"
+          keyboardType="email-address"
+          value={email}
+          onChangeText={setEmail}
+          error={errors.email}
+        />
+        <FormField
+          label="Password"
+          secureTextEntry
+          value={password}
+          onChangeText={setPassword}
+          error={errors.password}
+        />
+      </View>
 
-      <TextInput
-        style={globalStyles.input}
-        placeholder="Password"
-        placeholderTextColor="#7A7A96"
-        secureTextEntry
-        value={password}
-        onChangeText={setPassword}
-      />
-      {errors.password && <Text style={globalStyles.errorText}>{errors.password}</Text>}
+      <View style={{ gap: 20 }}>
+        <TouchableOpacity style={globalStyles.button} onPress={handleLogin}>
+          <Text style={globalStyles.buttonText}>Sign In</Text>
+        </TouchableOpacity>
 
-      <TouchableOpacity style={globalStyles.button} onPress={handleLogin}>
-        <Text style={globalStyles.buttonText}>Log In</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity onPress={() => navigation.navigate('Signup')}>
-        <Text style={globalStyles.linkText}>Don't have an account? Sign up</Text>
-      </TouchableOpacity>
-    </View>
+        <View style={globalStyles.linkRow}>
+          <Text style={globalStyles.linkText}>New to Aura?</Text>
+          <TouchableOpacity onPress={() => navigation.navigate('Signup')}>
+            <Text style={globalStyles.linkTextBold}>Create Account</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </ScrollView>
   );
 }

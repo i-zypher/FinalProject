@@ -1,13 +1,12 @@
 import React from 'react';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { createStackNavigator } from '@react-navigation/stack';
 import LoginScreen from '../screens/LoginScreen';
 import SignupScreen from '../screens/SignupScreen';
-import HomeScreen from '../screens/HomeScreen';
-import MeditationDetailScreen from '../screens/MeditationDetailScreen';
+import DrawerNavigator from './DrawerNavigator';
 import { RootStackParamList } from './types';
 import { colors } from '../styles/theme';
 
-const Stack = createNativeStackNavigator<RootStackParamList>();
+const Stack = createStackNavigator<RootStackParamList>();
 
 export default function AppNavigator() {
   return (
@@ -22,12 +21,7 @@ export default function AppNavigator() {
     >
       <Stack.Screen name="Login" component={LoginScreen} options={{ title: 'Log In' }} />
       <Stack.Screen name="Signup" component={SignupScreen} options={{ title: 'Sign Up' }} />
-      <Stack.Screen name="Home" component={HomeScreen} options={{ headerShown: false }} />
-      <Stack.Screen
-        name="MeditationDetail"
-        component={MeditationDetailScreen}
-        options={({ route }) => ({ title: route.params.meditation.title })}
-      />
+      <Stack.Screen name="Main" component={DrawerNavigator} options={{ headerShown: false }} />
     </Stack.Navigator>
   );
 }

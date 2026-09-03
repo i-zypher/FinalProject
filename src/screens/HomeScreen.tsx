@@ -1,18 +1,19 @@
 import React, { useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { DrawerActions } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import type { RootStackParamList } from '../navigation/types';
+import type { HomeStackParamList } from '../navigation/types';
 import { colors, spacing, fontSizes, globalStyles } from '../styles/theme';
 import TopBar from '../components/TopBar';
 import MeditationCard from '../components/MeditationCard';
 import { meditations as initialMeditations } from '../data/meditations';
+import { useUser } from '../context/UserContext';
 
-type Props = NativeStackScreenProps<RootStackParamList, 'Home'>;
+type Props = NativeStackScreenProps<HomeStackParamList, 'Home'>;
 
-export default function HomeScreen({ navigation, route }: Props) {
-  const { name } = route.params;
-
+export default function HomeScreen({ navigation }: Props) {
+  const { name } = useUser();
   const [meditations, setMeditations] = useState(initialMeditations);
 
   const popular = meditations.filter((m) => m.section === 'popular');
@@ -24,11 +25,14 @@ export default function HomeScreen({ navigation, route }: Props) {
 
   return (
     <View style={styles.screen}>
-      <TopBar title="Find your perfect meditation" onMenuPress={() => {}} onSettingsPress={() => {}} />
+      <TopBar
+        title="Find your perfect meditation"
+        onMenuPress={() => navigation.getParent()?.dispatch(DrawerActions.toggleDrawer())}
+      />
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.welcome}>
-          <Text style={globalStyles.headerText}>Hello, {name}!</Text>
+          <Text style={globalStyles.headerText}>Hello, {name || 'there'}!</Text>
           <Text style={globalStyles.subHeaderText}>
             Discover a session tailored to how you're feeling today.
           </Text>

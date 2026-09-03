@@ -1,15 +1,18 @@
 import { StyleSheet } from 'react-native';
 
 export const colors = {
-  primary: '#4C6EF5',
-  primaryDark: '#3B5BDB',
-  secondary: '#F5A623',
-  background: '#1A1A2E',
-  surface: '#16213E',
-  text: '#FFFFFF',
-  textMuted: '#A0A0B8',
-  border: '#2E2E4E',
-  error: '#E63946',
+  primary: '#6366F1',
+  primaryDark: '#4F46E5',
+  secondary: '#F5A623', // provisional — not yet confirmed from Figma's tag/category screens
+  background: '#FAF9FC',
+  surface: '#FFFFFF',
+  text: '#1E1A34',
+  textMuted: '#5C5670',
+  border: '#EAE7F2',
+  error: '#EF4444',
+  errorBg: '#FEE2E2',
+  logoGradientStart: '#1E1B4B',
+  logoGradientEnd: '#4338CA',
 };
 
 export const spacing = {
@@ -21,6 +24,7 @@ export const spacing = {
 };
 
 export const fontSizes = {
+  xs: 12,
   sm: 14,
   md: 16,
   lg: 20,
@@ -28,7 +32,19 @@ export const fontSizes = {
   xxl: 36,
 };
 
+// Family names must exactly match what useFonts() registers in App.tsx.
+export const fonts = {
+  headingBold: 'Outfit_700Bold',
+  bodyRegular: 'Manrope_400Regular',
+  bodySemiBold: 'Manrope_600SemiBold',
+  bodyBold: 'Manrope_700Bold',
+};
+
 export const globalStyles = StyleSheet.create({
+  screen: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
   container: {
     flex: 1,
     backgroundColor: colors.background,
@@ -38,46 +54,83 @@ export const globalStyles = StyleSheet.create({
   screenPadding: {
     padding: spacing.lg,
   },
+  scrollContent: {
+    padding: spacing.lg,
+    gap: spacing.xl,
+  },
+  brandHeader: {
+    alignItems: 'center',
+    gap: spacing.sm + 4,
+  },
   headerText: {
-    fontSize: fontSizes.xxl,
-    fontWeight: '700',
+    fontFamily: fonts.headingBold,
+    fontSize: fontSizes.xl,
     color: colors.text,
-    marginBottom: spacing.sm,
+    textAlign: 'center',
   },
   subHeaderText: {
+    fontFamily: fonts.bodyRegular,
     fontSize: fontSizes.md,
     color: colors.textMuted,
-    marginBottom: spacing.lg,
+    textAlign: 'center',
+  },
+  fieldLabel: {
+    fontFamily: fonts.bodySemiBold,
+    fontSize: fontSizes.sm,
+    color: colors.textMuted,
+    marginBottom: spacing.xs + 4,
   },
   input: {
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 8,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    color: colors.text,
+    borderRadius: 999,
+    height: 52,
+    paddingHorizontal: spacing.md + 4,
+    fontFamily: fonts.bodyRegular,
     fontSize: fontSizes.md,
-    marginBottom: spacing.md,
+    color: colors.text,
   },
   button: {
     backgroundColor: colors.primary,
-    borderRadius: 8,
-    paddingVertical: spacing.sm + 4,
+    borderRadius: 999,
+    height: 56,
     alignItems: 'center',
+    justifyContent: 'center',
     marginTop: spacing.sm,
   },
   buttonText: {
-    color: colors.text,
+    fontFamily: fonts.bodyBold,
     fontSize: fontSizes.md,
-    fontWeight: '600',
+    color: '#FFFFFF',
   },
-  linkText: {
-    color: colors.secondary,
-    fontSize: fontSizes.sm,
-    textAlign: 'center',
+  linkRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: spacing.xs,
     marginTop: spacing.md,
   },
-
-  
+  linkText: {
+    fontFamily: fonts.bodyRegular,
+    fontSize: fontSizes.sm,
+    color: colors.textMuted,
+  },
+  linkTextBold: {
+    fontFamily: fonts.bodyBold,
+    fontSize: fontSizes.sm,
+    color: colors.primary,
+  },
+  errorText: {
+    fontFamily: fonts.bodyRegular,
+    fontSize: fontSizes.xs,
+    color: colors.error,
+    marginTop: spacing.xs,
+    marginLeft: spacing.sm,
+  },
+  logo: {
+    width: 96,
+    height: 96,
+    alignSelf: 'center',
+    marginBottom: spacing.lg,
+  },
 });
