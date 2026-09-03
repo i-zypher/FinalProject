@@ -50,12 +50,12 @@ export default function SignupScreen({ navigation }: Props) {
     return Object.keys(next).length === 0;
   };
 
-  const handleSignup = () => {
+  const handleSignup = async () => {
     if (!validate()) return;
 
-    // No real backend — save the name against this email in the
-    // runtime-only accounts store so Login can look it up afterward.
-    saveAccount(email, fullName.trim());
+    // Persists to AsyncStorage now — survives app reloads/restarts,
+    // unlike the old in-memory version.
+    await saveAccount(email, fullName.trim());
     navigation.navigate('Login');
   };
 

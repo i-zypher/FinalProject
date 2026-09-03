@@ -37,13 +37,13 @@ export default function LoginScreen({ navigation }: Props) {
     return Object.keys(next).length === 0;
   };
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     if (!validate()) return;
 
-    // Prefer the name saved at Signup for this email, if there is one.
-    // Falls back to guessing from the email prefix for anyone logging
-    // in without having signed up in this session (no real backend).
-    const savedName = findAccountName(email);
+    // Looks up the persisted name from AsyncStorage for this email.
+    // Falls back to guessing from the email prefix if no account with
+    // this email was ever signed up on this device.
+    const savedName = await findAccountName(email);
     const fallbackName = email.trim().split('@')[0];
     setName(savedName ?? (fallbackName || 'there'));
     navigation.navigate('Main');
