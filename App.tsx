@@ -13,6 +13,8 @@ import {
 import AppNavigator from './src/navigation/AppNavigator';
 import { UserProvider } from './src/context/UserContext';
 import { FavoritesProvider } from './src/context/FavoritesContext';
+import { RemindersProvider } from './src/context/RemindersContext';
+
 
 SplashScreen.preventAutoHideAsync();
 
@@ -36,12 +38,14 @@ export default function App() {
 
   return (
         <GestureHandlerRootView style={{ flex: 1 }} onLayout={onLayoutRootView}>
-      <UserProvider>
+            <UserProvider>
         <FavoritesProvider>
-          <NavigationContainer>
-            <StatusBar style="dark" />
-            <AppNavigator />
-          </NavigationContainer>
+          <RemindersProvider>
+            <NavigationContainer>
+              <StatusBar style="dark" />
+              <AppNavigator />
+            </NavigationContainer>
+          </RemindersProvider>
         </FavoritesProvider>
       </UserProvider>
     </GestureHandlerRootView>

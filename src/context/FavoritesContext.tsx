@@ -1,4 +1,7 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+const STORAGE_KEY = 'aura_favorites';
 
 type FavoritesContextType = {
   favoriteIds: string[];
@@ -11,12 +14,36 @@ const FavoritesContext = createContext<FavoritesContextType | undefined>(undefin
 export function FavoritesProvider({ children }: { children: ReactNode }) {
   const [favoriteIds, setFavoriteIds] = useState<string[]>([]);
 
+  // Load any previously saved favorites once, when the app starts.
+  useEffect(() => {
+    (async () => {
+      try {
+        const raw = await AsyncStorage.getItem(STORAGE_KEY);
+        if (raw) setFavoriteIds(JSON.parse(raw));
+      } catch (err) {
+        console.warn('Failed to load favorites from storage', err);
+      }
+    })();
+  }, []);
+
+  const persist = async (ids: string[]) => {
+    try {
+      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(ids));
+    } catch (err) {
+      console.warn('Failed to save favorites to storage', err);
+    }
+  };
+
   const isFavorite = (id: string) => favoriteIds.includes(id);
 
   const toggleFavorite = (id: string) => {
-    setFavoriteIds((prev) =>
-      prev.includes(id) ? prev.filter((existingId) => existingId !== id) : [...prev, id]
-    );
+    setFavoriteIds((prev) => {
+      const next = prev.includes(id)
+        ? prev.filter((existingId) => existingId !== id)
+        : [...prev, id];
+      persist(next);
+      return next;
+    });
   };
 
   return (
