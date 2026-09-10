@@ -18,7 +18,7 @@ type FormErrors = {
 };
 
 export default function LoginScreen({ navigation }: Props) {
-  const { setName } = useUser();
+    const { setName, setEmail: setUserEmail } = useUser();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errors, setErrors] = useState<FormErrors>({});
@@ -46,6 +46,7 @@ export default function LoginScreen({ navigation }: Props) {
     const savedName = await findAccountName(email);
     const fallbackName = email.trim().split('@')[0];
     setName(savedName ?? (fallbackName || 'there'));
+    setUserEmail(email.trim());
     navigation.navigate('Main');
   };
 

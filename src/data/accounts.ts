@@ -29,6 +29,12 @@ export async function saveAccount(email: string, name: string): Promise<void> {
   accounts[normalizedEmail] = name;
   await persistAccounts(accounts);
 }
+export async function deleteAccount(email: string): Promise<void> {
+  const normalizedEmail = email.trim().toLowerCase();
+  const accounts = await loadAccounts();
+  delete accounts[normalizedEmail];
+  await persistAccounts(accounts);
+}
 
 export async function findAccountName(email: string): Promise<string | undefined> {
   const normalizedEmail = email.trim().toLowerCase();

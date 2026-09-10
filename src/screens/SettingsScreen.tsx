@@ -1,19 +1,60 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, Image, Switch, StyleSheet } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { DrawerScreenProps } from '@react-navigation/drawer';
 import type { DrawerParamList } from '../navigation/types';
 import { colors, spacing, fontSizes, fonts } from '../styles/theme';
 import TopBar from '../components/TopBar';
+import FormField from '../components/FormField';
 import { useUser } from '../context/UserContext';
+import { saveAccount, deleteAccount } from '../data/accounts';
 
 type Props = DrawerScreenProps<DrawerParamList, 'Settings'>;
 
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const hitSlopValue = { top: 8, bottom: 8, left: 8, right: 8 };
+
 export default function SettingsScreen({ navigation }: Props) {
-  const { name, setName } = useUser();
+  const { name, setName, email, setEmail } = useUser();
   const [darkModePreview, setDarkModePreview] = useState(true);
+
+    // Persisted for real (unlike the dark mode toggle above) — but does
+  // NOT yet trigger actual OS-level push notifications. That needs
+  // expo-notifications and permission handling, not wired up yet.
+  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+
+  useEffect(() => {
+    AsyncStorage.getItem('aura_notifications_enabled').then((value) => {
+      if (value !== null) setNotificationsEnabled(value === 'true');
+    });
+  }, []);
+
+   const handleToggleNotifications = (value: boolean) => {
+    setNotificationsEnabled(value);
+    AsyncStorage.setItem('aura_notifications_enabled', value ? 'true' : 'false');
+  };
+
+  // Saved for real, but nothing reads it yet — Start Session is still a
+  // no-op, so there's nothing for a "default duration" to actually
+  // apply to. This just gets the preference persisting honestly ahead
+  // of that being built.
+  const [preferredDuration, setPreferredDuration] = useState('10 min');
+
+  useEffect(() => {
+    AsyncStorage.getItem('aura_preferred_duration').then((value) => {
+      if (value) setPreferredDuration(value);
+    });
+  }, []);
+
+  const handleSelectDuration = (duration: string) => {
+    setPreferredDuration(duration);
+    AsyncStorage.setItem('aura_preferred_duration', duration);
+  };
 
   const handleLogout = () => {
     setName('');
+    setEmail('');
     navigation.getParent()?.reset({
       index: 0,
       routes: [{ name: 'Login' }],
@@ -21,7 +62,50 @@ export default function SettingsScreen({ navigation }: Props) {
   };
 
   const displayName = name ? name : 'Guest';
-  const displayEmail = name ? name.toLowerCase() + '@aura.app' : 'guest@aura.app';
+  const displayEmail = email ? email : 'guest@aura.app';
+
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [editName, setEditName] = useState(name);
+  const [editEmail, setEditEmail] = useState(email);
+  const [profileErrors, setProfileErrors] = useState<{ name?: string; email?: string }>({});
+
+  const handleStartEditing = () => {
+    setEditName(name);
+    setEditEmail(email);
+    setProfileErrors({});
+    setIsEditingProfile(true);
+  };
+
+  const handleSaveProfile = async () => {
+    const trimmedName = editName.trim();
+    const trimmedEmail = editEmail.trim();
+    const nextErrors: { name?: string; email?: string } = {};
+
+    if (!trimmedName) {
+      nextErrors.name = 'Name is required.';
+    }
+    if (!trimmedEmail) {
+      nextErrors.email = 'Email is required.';
+    } else if (!EMAIL_REGEX.test(trimmedEmail)) {
+      nextErrors.email = 'Enter a valid email address.';
+    }
+
+    setProfileErrors(nextErrors);
+    if (Object.keys(nextErrors).length > 0) return;
+
+    // If the email changed, move the stored account to the new key
+    // instead of leaving a stale duplicate under the old email.
+    if (email && trimmedEmail.toLowerCase() !== email.toLowerCase()) {
+      await deleteAccount(email);
+    }
+    await saveAccount(trimmedEmail, trimmedName);
+
+    setName(trimmedName);
+    setEmail(trimmedEmail);
+    setIsEditingProfile(false);
+  };
+
+
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
@@ -29,16 +113,51 @@ export default function SettingsScreen({ navigation }: Props) {
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <Text style={styles.pageTitle}>Sanctuary Settings</Text>
 
-        <View style={styles.profileCard}>
-          <Image source={{ uri: 'https://i.pravatar.cc/112' }} style={styles.avatar} />
-          <View style={{ flex: 1 }}>
-            <Text style={styles.name}>{displayName}</Text>
-            <Text style={styles.email}>{displayEmail}</Text>
+        {isEditingProfile ? (
+          <View style={styles.profileEditCard}>
+            <FormField
+              label="Full Name"
+              value={editName}
+              onChangeText={setEditName}
+              error={profileErrors.name}
+            />
+            <FormField
+              label="Email address"
+              autoCapitalize="none"
+              keyboardType="email-address"
+              value={editEmail}
+              onChangeText={setEditEmail}
+              error={profileErrors.email}
+            />
+            <View style={styles.editActionsRow}>
+              <TouchableOpacity
+                style={[styles.editActionBtn, styles.editCancelBtn]}
+                onPress={() => setIsEditingProfile(false)}
+              >
+                <Text style={styles.editCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.editActionBtn, styles.editSaveBtn]} onPress={handleSaveProfile}>
+                <Text style={styles.editSaveText}>Save</Text>
+              </TouchableOpacity>
+            </View>
           </View>
-          <View style={styles.badge}>
-            <Text style={styles.badgeText}>PRO</Text>
+        ) : (
+          <View style={styles.profileCard}>
+            <Image source={{ uri: 'https://i.pravatar.cc/112' }} style={styles.avatar} />
+            <View style={{ flex: 1 }}>
+              <Text style={styles.name}>{displayName}</Text>
+              <Text style={styles.email}>{displayEmail}</Text>
+            </View>
+            <View style={{ alignItems: 'flex-end', gap: spacing.sm }}>
+              <View style={styles.badge}>
+                <Text style={styles.badgeText}>PRO</Text>
+              </View>
+              <TouchableOpacity onPress={handleStartEditing} hitSlop={hitSlopValue}>
+                <Ionicons name="pencil" size={16} color={colors.primary} />
+              </TouchableOpacity>
+            </View>
           </View>
-        </View>
+        )}
 
         <Text style={styles.sectionTitle}>Appearance</Text>
         <View style={styles.themeCard}>
@@ -63,16 +182,72 @@ export default function SettingsScreen({ navigation }: Props) {
           </View>
         </View>
 
-        <Text style={styles.sectionTitle}>Account Safety</Text>
-        <View style={styles.logoutCard}>
-          <Text style={styles.logoutNote}>
-            Note: Logging out will temporarily clear offline audio downloads and temporary mindfulness streaks from this local device.
+        <Text style={styles.sectionTitle}>Account Settings</Text>
+        <View style={styles.themeCard}>
+          <Text style={styles.toggleLabel}>Default Session Length</Text>
+          <Text style={styles.toggleDesc}>
+            Saved as your preference — not yet used to pre-select anything, since Start Session doesn't do anything yet either.
           </Text>
-          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-            <Text style={styles.logoutButtonText}>Log Out</Text>
+          <View style={styles.durationRow}>
+            {['5 min', '10 min', '15 min'].map((duration) => (
+              <TouchableOpacity
+                key={duration}
+                style={
+                  preferredDuration === duration
+                    ? [styles.durationPill, styles.durationPillActive]
+                    : styles.durationPill
+                }
+                onPress={() => handleSelectDuration(duration)}
+              >
+                <Text
+                  style={
+                    preferredDuration === duration
+                      ? styles.durationLabelActive
+                      : styles.durationLabelInactive
+                  }
+                >
+                  {duration}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+
+        <Text style={styles.sectionTitle}>Notifications</Text>
+        <View style={styles.themeCard}>
+          <View style={styles.toggleRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.toggleLabel}>Reminder Notifications</Text>
+              <Text style={styles.toggleDesc}>Get nudged when a scheduled reminder is due.</Text>
+            </View>
+            <Switch
+              value={notificationsEnabled}
+              onValueChange={handleToggleNotifications}
+              trackColor={{ false: colors.border, true: colors.primary }}
+              thumbColor="#FFFFFF"
+            />
+          </View>
+          <View style={styles.divider} />
+          <TouchableOpacity onPress={() => navigation.navigate('Reminders')}>
+            <Text style={styles.manageRemindersLink}>Manage Reminders →</Text>
           </TouchableOpacity>
         </View>
+
+        <Text style={styles.sectionTitle}>Account Safety</Text>
+        <View style={styles.logoutCard}>
+            </View>
+
+        <Text style={styles.sectionTitle}>About</Text>
+        <View style={styles.aboutCard}>
+          <Text style={styles.aboutAppName}>Aura</Text>
+          <Text style={styles.aboutVersion}>Version 1.0.0</Text>
+          <Text style={styles.aboutDescription}>
+            A calm space for short, guided meditation sessions built into your day.
+          </Text>
+          <Text style={styles.aboutCredit}>Built by Nate Miller</Text>
+        </View>
       </ScrollView>
+
     </View>
   );
 }
@@ -191,5 +366,103 @@ const styles = StyleSheet.create({
     fontFamily: fonts.bodyBold,
     fontSize: fontSizes.md,
     color: colors.primary,
+  },
+
+  aboutCard: {
+    backgroundColor: colors.surface,
+    borderRadius: 20,
+    padding: spacing.lg - 4,
+    gap: 4,
+  },
+  aboutAppName: {
+    fontFamily: fonts.headingBold,
+    fontSize: fontSizes.md,
+    color: colors.text,
+  },
+  aboutVersion: {
+    fontFamily: fonts.bodyRegular,
+    fontSize: 12,
+    color: colors.textMuted,
+  },
+  aboutDescription: {
+    fontFamily: fonts.bodyRegular,
+    fontSize: 13,
+    color: colors.textMuted,
+    lineHeight: 18,
+    marginTop: spacing.xs,
+  },
+  aboutCredit: {
+    fontFamily: fonts.bodySemiBold,
+    fontSize: 12,
+    color: colors.primary,
+    marginTop: spacing.xs,
+  },
+  manageRemindersLink: {
+    fontFamily: fonts.bodyBold,
+    fontSize: fontSizes.sm,
+    color: colors.primary,
+    marginTop: spacing.sm,
+  },
+  durationRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    marginTop: spacing.sm + 4,
+  },
+  durationPill: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: 999,
+    backgroundColor: colors.background,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  durationPillActive: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  durationLabelInactive: {
+    fontFamily: fonts.bodySemiBold,
+    fontSize: fontSizes.sm,
+    color: colors.textMuted,
+  },
+  durationLabelActive: {
+    fontFamily: fonts.bodySemiBold,
+    fontSize: fontSizes.sm,
+    color: '#FFFFFF',
+  },
+  profileEditCard: {
+    backgroundColor: colors.surface,
+    borderRadius: 20,
+    padding: spacing.md,
+    gap: spacing.md,
+  },
+  editActionsRow: {
+    flexDirection: 'row',
+    gap: spacing.sm + 4,
+  },
+  editActionBtn: {
+    flex: 1,
+    borderRadius: 999,
+    height: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  editCancelBtn: {
+    backgroundColor: colors.background,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  editSaveBtn: {
+    backgroundColor: colors.primary,
+  },
+  editCancelText: {
+    fontFamily: fonts.bodySemiBold,
+    fontSize: fontSizes.sm,
+    color: colors.textMuted,
+  },
+  editSaveText: {
+    fontFamily: fonts.bodyBold,
+    fontSize: fontSizes.sm,
+    color: '#FFFFFF',
   },
 });
