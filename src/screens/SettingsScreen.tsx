@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, Image, Switch, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, Image, Switch, StyleSheet, Alert } from 'react-native';
+import Slider from '@react-native-community/slider';
+import { Picker } from '@react-native-picker/picker';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { DrawerScreenProps } from '@react-navigation/drawer';
@@ -8,7 +10,7 @@ import { colors, spacing, fontSizes, fonts } from '../styles/theme';
 import TopBar from '../components/TopBar';
 import FormField from '../components/FormField';
 import { useUser } from '../context/UserContext';
-import { saveAccount, deleteAccount } from '../data/accounts';
+import { saveAccount, deleteAccount, saveProfileExtra, loadProfileExtra, deleteProfileExtra } from '../data/accounts';
 
 type Props = DrawerScreenProps<DrawerParamList, 'Settings'>;
 
@@ -64,15 +66,42 @@ export default function SettingsScreen({ navigation }: Props) {
   const displayName = name ? name : 'Guest';
   const displayEmail = email ? email : 'guest@aura.app';
 
-  const [isEditingProfile, setIsEditingProfile] = useState(false);
+    const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [editName, setEditName] = useState(name);
   const [editEmail, setEditEmail] = useState(email);
+  const [editUsername, setEditUsername] = useState('');
+  const [editAge, setEditAge] = useState(25);
+  const [editCountry, setEditCountry] = useState('United States');
   const [profileErrors, setProfileErrors] = useState<{ name?: string; email?: string }>({});
 
-  const handleStartEditing = () => {
+  // What's shown on the display (non-edit) card, so the profile card
+  // itself proves the extra fields actually persisted.
+  const [profileExtraDisplay, setProfileExtraDisplay] = useState<{
+    username: string;
+    age: number;
+    country: string;
+  } | null>(null);
+
+  useEffect(() => {
+    if (!email) {
+      setProfileExtraDisplay(null);
+      return;
+    }
+    loadProfileExtra(email).then((extra) => {
+      setProfileExtraDisplay(extra ? extra : null);
+    });
+  }, [email, isEditingProfile]);
+
+   const handleStartEditing = async () => {
     setEditName(name);
     setEditEmail(email);
     setProfileErrors({});
+
+    const extra = await loadProfileExtra(email);
+    setEditUsername(extra?.username ?? '');
+    setEditAge(extra?.age ?? 25);
+    setEditCountry(extra?.country ?? 'United States');
+
     setIsEditingProfile(true);
   };
 
@@ -93,17 +122,27 @@ export default function SettingsScreen({ navigation }: Props) {
     setProfileErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return;
 
-    // If the email changed, move the stored account to the new key
-    // instead of leaving a stale duplicate under the old email.
+        // If the email changed, move the stored account (and profile
+    // extras) to the new key instead of leaving stale duplicates
+    // under the old email.
     if (email && trimmedEmail.toLowerCase() !== email.toLowerCase()) {
-      await deleteAccount(email);
-    }
-    await saveAccount(trimmedEmail, trimmedName);
-
-    setName(trimmedName);
-    setEmail(trimmedEmail);
-    setIsEditingProfile(false);
-  };
+        await deleteAccount(email);
+        await deleteProfileExtra(email);
+      }
+      await saveAccount(trimmedEmail, trimmedName);
+      await saveProfileExtra(trimmedEmail, {
+        username: editUsername.trim(),
+        age: editAge,
+        country: editCountry,
+      });
+  
+      setName(trimmedName);
+      setEmail(trimmedEmail);
+      setIsEditingProfile(false);
+  
+      // Matches the Flutter sample's Fluttertoast confirmation.
+      Alert.alert('Profile updated successfully');
+    };
 
 
 
@@ -121,7 +160,7 @@ export default function SettingsScreen({ navigation }: Props) {
               onChangeText={setEditName}
               error={profileErrors.name}
             />
-            <FormField
+                        <FormField
               label="Email address"
               autoCapitalize="none"
               keyboardType="email-address"
@@ -129,6 +168,38 @@ export default function SettingsScreen({ navigation }: Props) {
               onChangeText={setEditEmail}
               error={profileErrors.email}
             />
+            <FormField
+              label="Username"
+              autoCapitalize="none"
+              value={editUsername}
+              onChangeText={setEditUsername}
+            />
+
+            <View>
+              <Text style={styles.sliderLabel}>Age: {Math.round(editAge)}</Text>
+              <Slider
+                minimumValue={18}
+                maximumValue={100}
+                step={1}
+                value={editAge}
+                onValueChange={setEditAge}
+                minimumTrackTintColor={colors.primary}
+                maximumTrackTintColor={colors.border}
+                thumbTintColor={colors.primary}
+              />
+            </View>
+
+            <View>
+              <Text style={styles.sliderLabel}>Country</Text>
+              <View style={styles.pickerWrapper}>
+                <Picker selectedValue={editCountry} onValueChange={setEditCountry}>
+                  <Picker.Item label="United States" value="United States" />
+                  <Picker.Item label="Canada" value="Canada" />
+                  <Picker.Item label="India" value="India" />
+                </Picker>
+              </View>
+            </View>
+
             <View style={styles.editActionsRow}>
               <TouchableOpacity
                 style={[styles.editActionBtn, styles.editCancelBtn]}
@@ -147,6 +218,11 @@ export default function SettingsScreen({ navigation }: Props) {
             <View style={{ flex: 1 }}>
               <Text style={styles.name}>{displayName}</Text>
               <Text style={styles.email}>{displayEmail}</Text>
+              {profileExtraDisplay ? (
+                <Text style={styles.profileExtraText}>
+                  @{profileExtraDisplay.username || 'no-username'} • Age {Math.round(profileExtraDisplay.age)} • {profileExtraDisplay.country}
+                </Text>
+              ) : null}
             </View>
             <View style={{ alignItems: 'flex-end', gap: spacing.sm }}>
               <View style={styles.badge}>
@@ -226,16 +302,26 @@ export default function SettingsScreen({ navigation }: Props) {
               trackColor={{ false: colors.border, true: colors.primary }}
               thumbColor="#FFFFFF"
             />
+            <View style={{ gap: spacing.sm }}>
+            <TouchableOpacity onPress={() => navigation.navigate('Reminders')} style={{ alignSelf: 'flex-start' }}>
+              <Text style={styles.manageRemindersLink}>Manage Reminders →</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => navigation.navigate('Favorites')} style={{ alignSelf: 'flex-start' }}>
+              <Text style={styles.manageRemindersLink}>View Favorites →</Text>
+            </TouchableOpacity>
           </View>
-          <View style={styles.divider} />
-          <TouchableOpacity onPress={() => navigation.navigate('Reminders')}>
-            <Text style={styles.manageRemindersLink}>Manage Reminders →</Text>
-          </TouchableOpacity>
+          </View>
         </View>
 
         <Text style={styles.sectionTitle}>Account Safety</Text>
         <View style={styles.logoutCard}>
-            </View>
+          <Text style={styles.logoutNote}>
+            Note: Logging out will temporarily clear offline audio downloads and temporary mindfulness streaks from this local device.
+          </Text>
+          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+            <Text style={styles.logoutButtonText}>Log Out</Text>
+          </TouchableOpacity>
+        </View>
 
         <Text style={styles.sectionTitle}>About</Text>
         <View style={styles.aboutCard}>
@@ -464,5 +550,24 @@ const styles = StyleSheet.create({
     fontFamily: fonts.bodyBold,
     fontSize: fontSizes.sm,
     color: '#FFFFFF',
+  },
+  sliderLabel: {
+    fontFamily: fonts.bodySemiBold,
+    fontSize: fontSizes.sm,
+    color: colors.textMuted,
+    marginBottom: spacing.xs,
+  },
+  pickerWrapper: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 12,
+    overflow: 'hidden',
+    backgroundColor: colors.background,
+  },
+  profileExtraText: {
+    fontFamily: fonts.bodyRegular,
+    fontSize: 12,
+    color: colors.textMuted,
+    marginTop: 4,
   },
 });

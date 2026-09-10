@@ -5,7 +5,7 @@ import type { RootStackParamList } from '../navigation/types';
 import { globalStyles } from '../styles/theme';
 import Logo from '../components/Logo';
 import FormField from '../components/FormField';
-import { saveAccount } from '../data/accounts';
+import { saveAccount, saveProfileExtra } from '../data/accounts';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Signup'>;
 
@@ -50,12 +50,20 @@ export default function SignupScreen({ navigation }: Props) {
     return Object.keys(next).length === 0;
   };
 
-  const handleSignup = async () => {
+    const handleSignup = async () => {
     if (!validate()) return;
 
     // Persists to AsyncStorage now — survives app reloads/restarts,
     // unlike the old in-memory version.
     await saveAccount(email, fullName.trim());
+    // Seeds real profile-extra data (the username typed here, plus
+    // sensible defaults) so Settings has something real to load later
+    // instead of the username being thrown away like before.
+    await saveProfileExtra(email, {
+      username: username.trim(),
+      age: 25,
+      country: 'United States',
+    });
     navigation.navigate('Login');
   };
 
