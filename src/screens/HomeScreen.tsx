@@ -17,6 +17,7 @@ import { colors, spacing, fontSizes, fonts } from '../styles/theme';
 import CategoryPill from '../components/CategoryPill';
 import QuickStartCard from '../components/QuickStartCard';
 import Logo from '../components/Logo'; 
+import CosmicMomentCard from '../components/CosmicMomentCard';
 import { dailyFeatured, popularMeditations, categories } from '../data/meditations';
 import { useUser } from '../context/UserContext';
 
@@ -120,6 +121,10 @@ export default function HomeScreen({ navigation }: Props) {
                 />
               ))}
             </ScrollView>
+          </View>
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Cosmic Calm</Text>
+            <CosmicMomentCard />
           </View>
         </View>
       </ScrollView>
