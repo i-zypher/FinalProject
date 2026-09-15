@@ -2,7 +2,12 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const STORAGE_KEY = 'aura_accounts';
 
-type AccountMap = Record<string, string>;
+type Account = {
+  name: string;
+  password: string;
+};
+
+type AccountMap = Record<string, Account>;
 
 async function loadAccounts(): Promise<AccountMap> {
   try {
@@ -22,17 +27,35 @@ async function persistAccounts(accounts: AccountMap): Promise<void> {
   }
 }
 
-export async function saveAccount(email: string, name: string): Promise<void> {
+// password is optional so Settings can update just the name/email
+// without needing to know (or reset) the existing password.
+export async function saveAccount(email: string, name: string, password?: string): Promise<void> {
   const normalizedEmail = email.trim().toLowerCase();
   const accounts = await loadAccounts();
-  accounts[normalizedEmail] = name;
+  const existing = accounts[normalizedEmail];
+  accounts[normalizedEmail] = {
+    name,
+    password: password !== undefined ? password : existing?.password ?? '',
+  };
   await persistAccounts(accounts);
 }
 
 export async function findAccountName(email: string): Promise<string | undefined> {
   const normalizedEmail = email.trim().toLowerCase();
   const accounts = await loadAccounts();
-  return accounts[normalizedEmail];
+  return accounts[normalizedEmail]?.name;
+}
+
+// Returns the account's name if email+password match a real account,
+// or null if the account doesn't exist or the password is wrong. This
+// is the actual gate Login checks against now.
+export async function verifyCredentials(email: string, password: string): Promise<string | null> {
+  const normalizedEmail = email.trim().toLowerCase();
+  const accounts = await loadAccounts();
+  const account = accounts[normalizedEmail];
+  if (!account) return null;
+  if (account.password !== password) return null;
+  return account.name;
 }
 
 export async function deleteAccount(email: string): Promise<void> {
@@ -43,9 +66,8 @@ export async function deleteAccount(email: string): Promise<void> {
 }
 
 // --- Profile extras: username, age, country ---
-// Matches the Flutter lab sample's PersonalInfoScreen fields, stored
-// separately from the core account map so name/email lookup logic
-// above stays untouched.
+// Unchanged from before — stored separately from the account/password
+// map above.
 
 const PROFILE_EXTRA_KEY = 'aura_profile_extra';
 

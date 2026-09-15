@@ -10,7 +10,8 @@ import { colors, spacing, fontSizes, fonts } from '../styles/theme';
 import TopBar from '../components/TopBar';
 import FormField from '../components/FormField';
 import { useUser } from '../context/UserContext';
-import { saveAccount, deleteAccount, saveProfileExtra, loadProfileExtra, deleteProfileExtra } from '../data/accounts';
+import { saveAccount, deleteAccount, saveProfileExtra, loadProfileExtra, deleteProfileExtra, verifyCredentials } from '../data/accounts';
+
 
 type Props = DrawerScreenProps<DrawerParamList, 'Settings'>;
 
@@ -139,9 +140,49 @@ export default function SettingsScreen({ navigation }: Props) {
       setName(trimmedName);
       setEmail(trimmedEmail);
       setIsEditingProfile(false);
-  
+
       // Matches the Flutter sample's Fluttertoast confirmation.
       Alert.alert('Profile updated successfully');
+    };
+  
+    const [currentPassword, setCurrentPassword] = useState('');
+    const [newPassword, setNewPassword] = useState('');
+    const [confirmNewPassword, setConfirmNewPassword] = useState('');
+    const [passwordErrors, setPasswordErrors] = useState<{
+      current?: string;
+      newPass?: string;
+      confirm?: string;
+    }>({});
+  
+    const handleChangePassword = async () => {
+      const nextErrors: typeof passwordErrors = {};
+  
+      if (!currentPassword) {
+        nextErrors.current = 'Current password is required.';
+      }
+      if (!newPassword || newPassword.length < 8) {
+        nextErrors.newPass = 'New password must be at least 8 characters';
+      }
+      if (newPassword !== confirmNewPassword) {
+        nextErrors.confirm = 'Passwords do not match.';
+      }
+  
+      setPasswordErrors(nextErrors);
+      if (Object.keys(nextErrors).length > 0) return;
+  
+      // Actually verifies the current password before allowing the
+      // change — same check Login uses.
+      const verifiedName = await verifyCredentials(email, currentPassword);
+      if (!verifiedName) {
+        setPasswordErrors({ current: 'Current password is incorrect.' });
+        return;
+      }
+  
+      await saveAccount(email, verifiedName, newPassword);
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmNewPassword('');
+      Alert.alert('Password updated successfully');
     };
 
 
@@ -286,6 +327,36 @@ export default function SettingsScreen({ navigation }: Props) {
                 </Text>
               </TouchableOpacity>
             ))}
+          </View>
+        </View>
+
+        <Text style={styles.sectionTitle}>Change Password</Text>
+        <View style={styles.themeCard}>
+          <View style={{ gap: spacing.md }}>
+            <FormField
+              label="Current Password"
+              secureTextEntry
+              value={currentPassword}
+              onChangeText={setCurrentPassword}
+              error={passwordErrors.current}
+            />
+            <FormField
+              label="New Password"
+              secureTextEntry
+              value={newPassword}
+              onChangeText={setNewPassword}
+              error={passwordErrors.newPass}
+            />
+            <FormField
+              label="Confirm New Password"
+              secureTextEntry
+              value={confirmNewPassword}
+              onChangeText={setConfirmNewPassword}
+              error={passwordErrors.confirm}
+            />
+                        <TouchableOpacity style={styles.updatePasswordBtn} onPress={handleChangePassword}>
+              <Text style={styles.editSaveText}>Update Password</Text>
+            </TouchableOpacity>
           </View>
         </View>
 
@@ -569,5 +640,13 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: colors.textMuted,
     marginTop: 4,
+  },
+  updatePasswordBtn: {
+    backgroundColor: colors.primary,
+    borderRadius: 999,
+    height: 56,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: spacing.sm,
   },
 });

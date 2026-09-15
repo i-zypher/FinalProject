@@ -55,7 +55,7 @@ export default function SignupScreen({ navigation }: Props) {
 
     // Persists to AsyncStorage now — survives app reloads/restarts,
     // unlike the old in-memory version.
-    await saveAccount(email, fullName.trim());
+    await saveAccount(email, fullName.trim(), password);
     // Seeds real profile-extra data (the username typed here, plus
     // sensible defaults) so Settings has something real to load later
     // instead of the username being thrown away like before.

@@ -6,7 +6,7 @@ import { globalStyles } from '../styles/theme';
 import Logo from '../components/Logo';
 import FormField from '../components/FormField';
 import { useUser } from '../context/UserContext';
-import { findAccountName } from '../data/accounts';
+import { verifyCredentials } from '../data/accounts';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Login'>;
 
@@ -37,15 +37,19 @@ export default function LoginScreen({ navigation }: Props) {
     return Object.keys(next).length === 0;
   };
 
-  const handleLogin = async () => {
+ const handleLogin = async () => {
     if (!validate()) return;
 
-    // Looks up the persisted name from AsyncStorage for this email.
-    // Falls back to guessing from the email prefix if no account with
-    // this email was ever signed up on this device.
-    const savedName = await findAccountName(email);
-    const fallbackName = email.trim().split('@')[0];
-    setName(savedName ?? (fallbackName || 'there'));
+    // Actually gates access now — rejects login if no account exists
+    // for this email, or if the password doesn't match what was set
+    // at Signup.
+    const savedName = await verifyCredentials(email, password);
+    if (!savedName) {
+      setErrors({ password: 'Incorrect email or password.' });
+      return;
+    }
+
+    setName(savedName);
     setUserEmail(email.trim());
     navigation.navigate('Main');
   };
