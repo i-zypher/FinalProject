@@ -6,12 +6,12 @@ const STORAGE_KEY = 'aura_reminders';
 export type Reminder = {
   id: string;
   label: string;
-  time: string; // free-form for now, e.g. "7:00 AM"
+  dateTimeIso: string;
 };
 
 type RemindersContextType = {
   reminders: Reminder[];
-  addReminder: (label: string, time: string) => void;
+  addReminder: (label: string, dateTimeIso: string) => void;
   removeReminder: (id: string) => void;
 };
 
@@ -39,9 +39,9 @@ export function RemindersProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const addReminder = (label: string, time: string) => {
+  const addReminder = (label: string, dateTimeIso: string) => {
     setReminders((prev) => {
-      const next = [...prev, { id: Date.now().toString(), label, time }];
+      const next = [...prev, { id: Date.now().toString(), label, dateTimeIso }];
       persist(next);
       return next;
     });

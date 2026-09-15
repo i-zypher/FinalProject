@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, Image, Switch, StyleSheet, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, Image, Switch, StyleSheet, Alert, Platform } from 'react-native';
 import Slider from '@react-native-community/slider';
 import { Picker } from '@react-native-picker/picker';
 import { Ionicons } from '@expo/vector-icons';
@@ -11,8 +11,7 @@ import TopBar from '../components/TopBar';
 import FormField from '../components/FormField';
 import { useUser } from '../context/UserContext';
 import { saveAccount, deleteAccount, saveProfileExtra, loadProfileExtra, deleteProfileExtra, verifyCredentials } from '../data/accounts';
-
-
+import { requestNotificationPermissions, scheduleNotificationAt } from '../utils/notifications';
 type Props = DrawerScreenProps<DrawerParamList, 'Settings'>;
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -33,10 +32,31 @@ export default function SettingsScreen({ navigation }: Props) {
     });
   }, []);
 
-   const handleToggleNotifications = (value: boolean) => {
+  const handleToggleNotifications = async (value: boolean) => {
     setNotificationsEnabled(value);
     AsyncStorage.setItem('aura_notifications_enabled', value ? 'true' : 'false');
-  };
+    if (value) {
+        const granted = await requestNotificationPermissions();
+        if (!granted) {
+          Alert.alert('Notifications permission was not granted.');
+        }
+      }
+    };
+  
+    const handleTestNotification = async () => {
+      const granted = await requestNotificationPermissions();
+      if (!granted) {
+        Alert.alert('Notifications permission is required to send a test notification.');
+        return;
+      }
+      const targetDate = new Date(Date.now() + 60 * 1000);
+      await scheduleNotificationAt('Test Title', 'This is a test notification.', targetDate);
+      Alert.alert(
+        Platform.OS === 'web'
+          ? 'Test notification set — keep this tab open, it\'ll appear in about 1 minute.'
+          : 'Test notification scheduled — it\'ll appear in about 1 minute.'
+      );
+    };
 
   // Saved for real, but nothing reads it yet — Start Session is still a
   // no-op, so there's nothing for a "default duration" to actually
@@ -381,7 +401,10 @@ export default function SettingsScreen({ navigation }: Props) {
               <Text style={styles.manageRemindersLink}>View Favorites →</Text>
             </TouchableOpacity>
           </View>
-          </View>
+          <TouchableOpacity style={styles.updatePasswordBtn} onPress={handleTestNotification}>
+            <Text style={styles.editSaveText}>Test Notification</Text>
+          </TouchableOpacity>
+        </View>
         </View>
 
         <Text style={styles.sectionTitle}>Account Safety</Text>
