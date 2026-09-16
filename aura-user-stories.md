@@ -1,11 +1,5 @@
 # Aura — User Stories (Current Implementation)
 
-Each story below is rewritten from the original template to reflect what
-Aura actually does right now, not features that are planned but not built.
-Each one is marked with its real status: Done, Partial, or Not Built.
-
----
-
 ## Guided Sessions & Timer
 
 ### 1. Browse available meditation sessions
@@ -38,7 +32,7 @@ Status: Not Built
 
 No audio playback exists at all, ambient or otherwise.
 
----
+
 
 ## Progress & Streaks
 
@@ -53,7 +47,7 @@ Status: Not Built
 
 No history is recorded and no stats screen exists.
 
----
+
 
 ## Reminders & Habit-Building
 
@@ -92,7 +86,7 @@ Status: Not Built
 This needs streak or history tracking (Story 4/5), which doesn't exist
 yet.
 
----
+
 
 ## Content Library & Personalization
 
@@ -122,7 +116,7 @@ Status: Not Built
 There's no audio to download in the first place, since no session has
 actual playable content yet.
 
----
+
 
 ## Summary
 
